@@ -1,0 +1,49 @@
+name: Update AK node list
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'   # 每 12 小时（UTC 0/12 点 = 北京时间 8/20 点）
+  workflow_dispatch:          # 支持手动触发
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: update-ak-nodes
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 抓取 VPN Gate + 检测 + 生成清单
+        run: node update.mjs
+        env:
+          CHECK_WORKER: 'https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@'
+          CHECK_CONCURRENCY: '16'
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,4 @@
+# 检测 Worker 部署配置（cmliu/CF-Workers-CheckSocks5）
+name = "ak-check"
+main = "_worker.js"
+compatibility_date = "2025-09-23"

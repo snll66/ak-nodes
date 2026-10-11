@@ -1,0 +1,4 @@
+dist/
+_vpngate_ref.py
+node_modules/
+check-worker/.wrangler/
