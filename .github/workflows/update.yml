@@ -6,7 +6,7 @@ on:
   workflow_dispatch:          # 支持手动触发
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -47,3 +47,14 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: 回写清单（保持仓库活跃，防止 60 天后定时被 GitHub 暂停）
+        run: |
+          mkdir -p data
+          cp dist/ak.txt data/ak.txt
+          cp dist/stats.json data/stats.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "chore: 更新节点清单 $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push

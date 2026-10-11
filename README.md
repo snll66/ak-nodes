@@ -19,6 +19,7 @@
 update.mjs                       抓取 + 检测 + 生成（Node，零依赖）
 .github/workflows/update.yml     每 12 小时跑一次（也支持手动触发）
 check-worker/                    检测 Worker 源码（部署在 Cloudflare）
+data/                            最近一次生成的清单（工作流回写，保持仓库活跃）
 ```
 
 ## 配置
