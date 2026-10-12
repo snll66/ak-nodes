@@ -130,23 +130,66 @@ function toSstpNodes(rows) {
 }
 
 // ---------------------------------------------------------------- 附加数据源（HTTPS / TURN）
-// 格式：sources/*.csv，表头 type,host,port,user,pass,country（country 用中文，如 日本/法国）
+// sources/ 目录下任意 *.csv，自动识别三种写法并去重（可混用、可带表头）：
+//   1) 统一格式：type,host,port,user,pass,country          （type=https/turn；country 中文）
+//   2) 扫描原格式：协议,节点链接,类型,出口IP,出口地区,…    （第 2 列是完整链接，自动取端口/账号/国家）
+//   3) 直接粘链接：每行一条 https://host:port 或 turn://host:port（可带 #标签、可带 账号:密码@）
+// 注意：明文 http:// 不支持（AK 引擎只认 https://），会被跳过并计数
 function loadExtraNodes() {
+  const EN2ZH = {
+    'Japan': '日本', 'South Korea': '韩国', 'Korea': '韩国', 'United States': '美国', 'Germany': '德国',
+    'France': '法国', 'Netherlands': '荷兰', 'Singapore': '新加坡', 'Hong Kong': '香港', 'Taiwan': '台湾',
+    'United Kingdom': '英国', 'Canada': '加拿大', 'Russia': '俄罗斯', 'India': '印度', 'Thailand': '泰国',
+    'Vietnam': '越南', 'Italy': '意大利', 'Spain': '西班牙', 'Poland': '波兰', 'Sweden': '瑞典',
+    'Switzerland': '瑞士', 'Turkey': '土耳其', 'Ukraine': '乌克兰', 'Romania': '罗马尼亚', 'Czechia': '捷克',
+    'Finland': '芬兰', 'Norway': '挪威', 'Denmark': '丹麦', 'Ireland': '爱尔兰', 'Belgium': '比利时',
+    'Austria': '奥地利', 'Hungary': '匈牙利', 'Greece': '希腊', 'Portugal': '葡萄牙', 'Bulgaria': '保加利亚',
+    'Serbia': '塞尔维亚', 'Croatia': '克罗地亚', 'Indonesia': '印度尼西亚', 'Malaysia': '马来西亚',
+    'Philippines': '菲律宾', 'Mexico': '墨西哥', 'Argentina': '阿根廷', 'Brazil': '巴西', 'Australia': '澳大利亚',
+    'New Zealand': '新西兰', 'South Africa': '南非', 'Israel': '以色列', 'Egypt': '埃及',
+  };
+  const isPort = s => /^\d{1,5}$/.test(s) && +s >= 1 && +s <= 65535;
   const nodes = [];
+  let httpSkipped = 0;
+  let bCountryIdx = -1; // TURN 工具格式表头里 EXIT_LOCATION_COUNTRY 的列号
+  const push = (stype, host, port, user, pass, country) => {
+    if (stype === 'http') { httpSkipped++; return; }
+    if ((stype !== 'https' && stype !== 'turn') || !host || !isPort(String(port))) return;
+    const zh = country ? (EN2ZH[country] || country) : '';
+    nodes.push({ host, port: +port, user: user || '', pass: pass || '', country: zh, code: ZH2CODE[zh] || 'XX', stype });
+  };
   if (!fs.existsSync(SOURCES_DIR)) return nodes;
   for (const f of fs.readdirSync(SOURCES_DIR).filter(x => x.endsWith('.csv')).sort()) {
     let text = '';
     try { text = fs.readFileSync(path.join(SOURCES_DIR, f), 'utf8'); } catch { continue; }
-    for (const ln of text.split(/\r?\n/)) {
-      const t = ln.trim();
-      if (!t || t.startsWith('type,') || t.startsWith('#')) continue;
-      const f6 = t.split(',');
-      if (f6.length < 6) continue;
-      const [stype, host, portS, user, pass, country] = f6.map(x => x.trim());
-      if (!host || (stype !== 'https' && stype !== 'turn')) continue;
-      const port = +portS;
-      if (!(port >= 1 && port <= 65535)) continue;
-      nodes.push({ host, port, user, pass, country, code: ZH2CODE[country] || 'XX', stype });
+    for (const raw of text.split(/\r?\n/)) {
+      const t = raw.replace(/^\uFEFF/, '').trim();
+      if (!t || t.startsWith('#')) continue;
+      const f6 = t.split(',').map(x => x.trim());
+      if (f6.includes('EXIT_LOCATION_COUNTRY')) { bCountryIdx = f6.indexOf('EXIT_LOCATION_COUNTRY'); continue; }
+      // 分支 1/2：行里带完整链接（扫描格式第 2 列 / 直接粘链接第 1 列）
+      let nodeStr = '', countryHint = '';
+      if (f6[1] && f6[1].includes('://')) { nodeStr = f6[1]; countryHint = f6[4] || ''; }
+      else if (f6[0] && f6[0].includes('://')) { nodeStr = f6[0]; countryHint = f6[1] || ''; }
+      if (nodeStr) {
+        const m = nodeStr.match(/^([a-z][a-z0-9+.-]*):\/\//i);
+        if (!m) continue;
+        const scheme = m[1].toLowerCase();
+        if (scheme !== 'https' && scheme !== 'turn' && scheme !== 'http') continue; // sstp 等来源不接
+        let rest = nodeStr.slice(m[0].length).split('#')[0];
+        let user = '', pass = '';
+        const at = rest.lastIndexOf('@');
+        if (at >= 0) { const cred = rest.slice(0, at); rest = rest.slice(at + 1); const ci = cred.indexOf(':'); user = ci >= 0 ? cred.slice(0, ci) : cred; pass = ci >= 0 ? cred.slice(ci + 1) : ''; }
+        const ci2 = rest.lastIndexOf(':');
+        const host = ci2 > 0 ? rest.slice(0, ci2) : rest;
+        const port = ci2 > 0 ? rest.slice(ci2 + 1) : (scheme === 'turn' ? '3478' : '443');
+        push(scheme, host, port, user, pass, countryHint);
+        continue;
+      }
+      // 分支 3：统一格式 type,host,port,user,pass,country
+      if (isPort(f6[2])) { push(f6[0], f6[1], f6[2], f6[3], f6[4], f6[5] || ''); continue; }
+      // 分支 4：TURN 工具格式 TYPE,USERNAME,PASSWORD,HOSTNAME,PORT,LINK,…
+      if (isPort(f6[4])) { push(f6[0], f6[3], f6[4], f6[1], f6[2], bCountryIdx >= 0 ? (f6[bCountryIdx] || '') : ''); continue; }
     }
   }
   const seen = new Set(), out = [];
@@ -155,7 +198,8 @@ function loadExtraNodes() {
     if (seen.has(k)) continue;
     seen.add(k); out.push(n);
   }
-  console.log(`[源] 附加数据源 ${out.length} 个（HTTPS ${out.filter(n => n.stype === 'https').length}、TURN ${out.filter(n => n.stype === 'turn').length}）`);
+  const dup = nodes.length - out.length;
+  console.log(`[源] 附加数据源 ${out.length} 个（HTTPS ${out.filter(n => n.stype === 'https').length}、TURN ${out.filter(n => n.stype === 'turn').length}）${dup ? `，去重去掉 ${dup} 条` : ''}${httpSkipped ? `，跳过明文 http ${httpSkipped} 条（引擎不支持）` : ''}`);
   return out;
 }
 
