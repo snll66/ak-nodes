@@ -10,8 +10,8 @@ const CHECK_WORKER = process.env.CHECK_WORKER || 'https://ak-check.class-40b.wor
 const CONCURRENCY = +(process.env.CHECK_CONCURRENCY || 6);
 const LIMIT = +(process.env.LIMIT || 0); // 本地测试用：只检前 N 个（0=全部）
 const CHECK_TIMEOUT_MS = +(process.env.CHECK_TIMEOUT_MS || 75000);
-const AK_UUID = '2523c510-9ff0-415b-9582-93949bfae7e3'; // AK.js 顶部 uuid（公开默认值）
-const AK_HOST = 'txs.mavita.kdns.fr'; // AK Worker 域名
+const AK_UUID = process.env.AK_UUID || '2523c510-9ff0-415b-9582-93949bfae7e3'; // 可在 GitHub Variables 里覆盖（AK_UUID）
+const AK_HOST = process.env.AK_HOST || 'txs.mavita.kdns.fr'; // 可在 GitHub Variables 里覆盖（AK_HOST）
 const DIST = path.resolve(import.meta.dirname, 'dist');
 const UA = { 'User-Agent': 'Mozilla/5.0 (ak-nodes)' };
 

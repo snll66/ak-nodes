@@ -33,8 +33,11 @@ jobs:
       - name: 抓取 VPN Gate + 检测 + 生成清单
         run: node update.mjs
         env:
-          CHECK_WORKER: 'https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@'
-          CHECK_CONCURRENCY: '16'
+          # 以下三项可在仓库 Settings → Secrets and variables → Actions → Variables 里覆盖（不用改代码）
+          CHECK_WORKER: ${{ vars.CHECK_WORKER || 'https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@' }}
+          AK_HOST: ${{ vars.AK_HOST || 'txs.mavita.kdns.fr' }}
+          AK_UUID: ${{ vars.AK_UUID || '2523c510-9ff0-415b-9582-93949bfae7e3' }}
+          CHECK_CONCURRENCY: '6'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

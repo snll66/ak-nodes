@@ -22,11 +22,19 @@ check-worker/                    检测 Worker 源码（部署在 Cloudflare）
 data/                            最近一次生成的清单（工作流回写，保持仓库活跃）
 ```
 
-## 配置
+## 怎么换配置（不用改代码）
 
-- 节点链接里的 UUID / 域名：`update.mjs` 顶部 `AK_UUID` / `AK_HOST`
-- 检测 Worker 地址：`update.yml` 里的 `CHECK_WORKER` 环境变量
-- 更新频率：`update.yml` 里的 `cron`（当前 `0 */12 * * *`）
+进仓库 **Settings → Secrets and variables → Actions → Variables** 标签页，点 **New repository variable** 添加（或点已有的编辑）：
+
+| 变量名 | 干什么的 | 默认值（不设置时） |
+|---|---|---|
+| `AK_HOST` | 节点域名（AK Worker 的域名，链接里指向它） | `txs.mavita.kdns.fr` |
+| `AK_UUID` | AK Worker 的 UUID（要与 AK.js 里的一致） | `2523c510-9ff0-415b-9582-93949bfae7e3` |
+| `CHECK_WORKER` | 检测 Worker 地址（结尾必须带 `/check?sstp=vpn:vpn@`） | `https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@` |
+
+改完去 **Actions → Update AK node list → Run workflow** 手动跑一次，新配置立刻生效（不手动跑就等下一个 12 小时自动跑）。
+
+- 更新频率：`.github/workflows/update.yml` 里的 `cron`（当前 `0 */12 * * *`）
 
 ## 原理
 
