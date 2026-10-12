@@ -6,12 +6,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// ========== 配置区：换节点域名 / 检测地址 / UUID，开关 ECH 和 ed 参数，就改下面几行 ==========
+// ========== 配置区：换节点域名 / 检测地址 / UUID，开关 ECH / ed / 只留家宽，就改下面几行 ==========
 const CHECK_WORKER = 'https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@'; // 检测 Worker 地址（结尾必须带 /check?sstp=vpn:vpn@）
 const AK_UUID = '2523c510-9ff0-415b-9582-93949bfae7e3'; // 节点 UUID（要和 AK.js 里的一致）
 const AK_HOST = 'txs.mavita.kdns.fr'; // 节点域名（AK Worker 的域名）
 const ECH = true; // ECH 参数：true=开（链接带 ech=cloudflare-ech.com+https://223.5.5.5/dns-query），false=关
 const ED = false; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
+const ONLY_RES = true; // 只留家宽：true=清单只保留住宅节点（去掉机房/未识别），false=两种都留
 // =======================================================================================
 const CONCURRENCY = +(process.env.CHECK_CONCURRENCY || 6);
 const LIMIT = +(process.env.LIMIT || 0); // 本地测试用：只检前 N 个（0=全部）
@@ -197,9 +198,10 @@ function main() {
       results = results.map(r => map.get(`${r.host}:${r.port}`) || r);
       failed = results.filter(r => !r.success);
     }
-    const ok = results.filter(r => r.success);
+    let ok = results.filter(r => r.success);
     console.log(`[检测] 可用 ${ok.length}/${results.length}（其中 ${ok.filter(r => !r.exit).length} 个仅确认隧道通）`);
     for (const r of failed) console.log(`  ✗ ${r.host}:${r.port} — ${r.error}`);
+    if (ONLY_RES) { const n0 = ok.length; ok = ok.filter(r => r.kind === 'residential'); console.log(`[筛选] 只留家宽：${n0} → ${ok.length}（去掉 ${n0 - ok.length} 个机房/未识别）`); }
 
     // 按国家分组
     const byC = new Map();
