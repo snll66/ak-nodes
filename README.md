@@ -22,19 +22,21 @@ check-worker/                    检测 Worker 源码（部署在 Cloudflare）
 data/                            最近一次生成的清单（工作流回写，保持仓库活跃）
 ```
 
-## 怎么换配置（不用改代码）
+## 怎么换配置（改 update.mjs 顶部「配置区」三行）
 
-进仓库 **Settings → Secrets and variables → Actions → Variables** 标签页，点 **New repository variable** 添加（或点已有的编辑）：
+在 GitHub 网页上直接编辑 [update.mjs](https://github.com/snll66/ak-nodes/edit/main/update.mjs)（点右上角铅笔图标），改下面三行引号里的值，提交即可：
 
-| 变量名 | 干什么的 | 默认值（不设置时） |
+| 要换什么 | 改哪一行 | 当前值 |
 |---|---|---|
-| `AK_HOST` | 节点域名（AK Worker 的域名，链接里指向它） | `txs.mavita.kdns.fr` |
-| `AK_UUID` | AK Worker 的 UUID（要与 AK.js 里的一致） | `2523c510-9ff0-415b-9582-93949bfae7e3` |
-| `CHECK_WORKER` | 检测 Worker 地址（结尾必须带 `/check?sstp=vpn:vpn@`） | `https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@` |
+| 节点域名 | `AK_HOST` | `txs.mavita.kdns.fr` |
+| 节点 UUID | `AK_UUID` | `2523c510-9ff0-415b-9582-93949bfae7e3` |
+| 检测 Worker | `CHECK_WORKER` | `https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@` |
 
-改完去 **Actions → Update AK node list → Run workflow** 手动跑一次，新配置立刻生效（不手动跑就等下一个 12 小时自动跑）。
+改完去 **Actions → Update AK node list → Run workflow** 手动跑一次立刻生效（不跑就等下一个 12 小时自动跑）。
 
-- 更新频率：`.github/workflows/update.yml` 里的 `cron`（当前 `0 */12 * * *`）
+- 检测地址**结尾必须带 `/check?sstp=vpn:vpn@`**（脚本靠它拼检测网址）
+- 换域名后旧链接作废，客户端要重新导入新清单
+- 更新频率：`update.yml` 里的 `cron`（当前 `0 */12 * * *`）
 
 ## 原理
 
