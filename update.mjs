@@ -149,6 +149,18 @@ function loadExtraNodes() {
     'New Zealand': '新西兰', 'South Africa': '南非', 'Israel': '以色列', 'Egypt': '埃及',
   };
   const isPort = s => /^\d{1,5}$/.test(s) && +s >= 1 && +s <= 65535;
+  const splitCsv = line => { // 正确切分 CSV：引号内的逗号不拆、去掉外层引号
+    const out = []; let cur = '', q = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+      else if (c === '"') q = true;
+      else if (c === ',') { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out;
+  };
   const mapHint = s => {
     s = String(s || '').trim();
     if (['住宅', '家宽', 'residential', 'isp'].includes(s)) return 'residential';
@@ -171,7 +183,7 @@ function loadExtraNodes() {
     for (const raw of text.split(/\r?\n/)) {
       const t = raw.replace(/^\uFEFF/, '').trim();
       if (!t || t.startsWith('#')) continue;
-      const f6 = t.split(',').map(x => x.trim());
+      const f6 = splitCsv(t).map(x => x.trim());
       if (f6[0] === 'TYPE' || f6.includes('EXIT_LOCATION_COUNTRY') || f6.includes('EXIT_IS_DATACENTER')) {
         const i = f6.indexOf('EXIT_LOCATION_COUNTRY'); if (i >= 0) bCountryIdx = i;
         const j = f6.indexOf('EXIT_IS_DATACENTER'); if (j >= 0) bDcIdx = j;
