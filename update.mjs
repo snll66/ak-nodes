@@ -12,7 +12,7 @@ const AK_UUID = '2523c510-9ff0-415b-9582-93949bfae7e3'; // 节点 UUID（要和 
 const AK_HOST = 'txs.mavita.kdns.fr'; // 节点域名（AK Worker 的域名）
 const ECH = true; // ECH 参数：true=开（链接带 ech=cloudflare-ech.com+https://223.5.5.5/dns-query），false=关
 const ED = false; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
-const ONLY_RES = true; // 只留家宽：true=清单只保留住宅节点（去掉机房/未识别），false=两种都留
+const ONLY_RES = true; // 只留住宅：true=清单只保留住宅节点（没住宅的国家保留延迟最低 1 个兜底），false=全类型都留
 const AK_ADDRS = ['cf.090227.xyz']; // 优选域名（连接地址）：可填多个，按顺序轮流分给各节点；清空数组=直连 AK_HOST
 // =======================================================================================
 const CHECK_BASE = CHECK_WORKER.split('?')[0]; // 检测接口基地址（各类型分别拼 ?sstp= / ?turn= / ?https=）
@@ -302,8 +302,6 @@ function main() {
     let ok = results.filter(r => r.success);
     console.log(`[检测] 可用 ${ok.length}/${results.length}（其中 ${ok.filter(r => !r.exit).length} 个仅确认隧道通）`);
     for (const r of failed) console.log(`  ✗ [${r.stype}] ${r.host}:${r.port} — ${r.error}`);
-    if (ONLY_RES) { const n0 = ok.length; ok = ok.filter(r => r.stype !== 'sstp' || r.kind === 'residential'); console.log(`[筛选] 只留家宽：${n0} → ${ok.length}（去掉 ${n0 - ok.length} 个 SSTP 非住宅）`); }
-
     // 按国家分组
     const byC = new Map();
     for (const n of ok) {
@@ -311,11 +309,21 @@ function main() {
       if (!byC.has(c)) byC.set(c, []);
       byC.get(c).push(n);
     }
+    // 只留住宅：有住宅的国家只留住宅；没住宅的国家保留延迟最低的 1 个兜底
+    let fbCountries = 0;
     const countries = [...byC.entries()].map(([code, ns]) => {
+      let picked = ns;
+      if (ONLY_RES) {
+        const res = ns.filter(n => n.kind === 'residential');
+        if (res.length) picked = res;
+        else { fbCountries++; picked = [ns.slice().sort((a, b) => (a.latency ?? 9e9) - (b.latency ?? 9e9))[0]]; }
+      }
       const prio = n => (n.stype === 'sstp' ? 0 : n.stype === 'https' ? 2 : 4) + (n.kind === 'residential' ? 0 : 1);
-      ns.sort((a, b) => prio(a) - prio(b) || (a.latency ?? 9e9) - (b.latency ?? 9e9) || a.host.localeCompare(b.host));
-      return { code, zh: COUNTRY_ZH[code] || code, nodes: ns };
+      picked.sort((a, b) => prio(a) - prio(b) || (a.latency ?? 9e9) - (b.latency ?? 9e9) || a.host.localeCompare(b.host));
+      return { code, zh: COUNTRY_ZH[code] || code, nodes: picked };
     }).sort((a, b) => b.nodes.length - a.nodes.length || a.code.localeCompare(b.code));
+    const kept = countries.reduce((s, c) => s + c.nodes.length, 0);
+    if (ONLY_RES) console.log(`[筛选] 只留住宅：${ok.length} → ${kept}（其中 ${fbCountries} 个国家无住宅，各保留延迟最低 1 个）`);
 
     // 输出
     fs.rmSync(DIST, { recursive: true, force: true });
@@ -344,7 +352,8 @@ function main() {
       sstp_nodes: sstpCount,
       extra_nodes: nodes.length - sstpCount,
       checked: results.length,
-      success: ok.length,
+      success: kept,
+      available: ok.length,
       types: { sstp: ok.filter(r => r.stype === 'sstp').length, https: ok.filter(r => r.stype === 'https').length, turn: ok.filter(r => r.stype === 'turn').length },
       classes: { residential: ok.filter(r => r.kind === 'residential').length, commercial: ok.filter(r => r.kind === 'commercial').length, unknown: ok.filter(r => r.kind === 'unknown').length },
       countries: countries.map(c => ({ code: c.code, zh: c.zh, count: c.nodes.length })),
