@@ -48,7 +48,11 @@ data/                            最近一次生成的清单（工作流回写�
 
 1. 拉 VPN Gate 官方列表（回退：GitHub 镜像），从每个节点的 OpenVPN 配置里提取 SSTP 端口（`proto tcp` + `remote` 行）；同时读取 `sources/` 里的附加节点（HTTPS / TURN）；
 2. 逐个调用自建检测 Worker（跑在 Cloudflare 上，`/check?sstp=…`、`/check?turn=…`、`/check?https=…`）——只有「从 CF 能连上」的节点才保留；
-3. 生成 AK 格式的 VLESS 链接（`/sstp://…`、`/turn://…`、`/?https://…` 三种路径，节点名带国家与类型，如 `日本-住宅-01`、`法国-TURN-02`），发布到 GitHub Pages。
+3. 生成 AK 格式的 VLESS 链接（`/sstp://…`、`/turn://…`、`/?https://…` 三种路径），发布到 GitHub Pages。
+
+**节点名格式**：`国家-类别-序号`（SSTP）或 `国家-协议-类别-序号`（HTTPS/TURN），如 `日本-住宅-01`、`日本-HTTPS-商业-01`、`法国-TURN-商业-01`。
+
+**住宅/商业怎么判断**：优先看检测时读到的**出口 IP 属性**（运营商类型 `isp`→住宅；`hosting`/`business`/托管标记→商业）；读不到时用数据源自带的类型标注兜底；都没有则标「未知」（不硬说成商业）。
 
 ## 致谢
 

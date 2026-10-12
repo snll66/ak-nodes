@@ -149,14 +149,20 @@ function loadExtraNodes() {
     'New Zealand': '新西兰', 'South Africa': '南非', 'Israel': '以色列', 'Egypt': '埃及',
   };
   const isPort = s => /^\d{1,5}$/.test(s) && +s >= 1 && +s <= 65535;
+  const mapHint = s => {
+    s = String(s || '').trim();
+    if (['住宅', '家宽', 'residential', 'isp'].includes(s)) return 'residential';
+    if (['商业', '机房', '企业', 'hosting', 'business', 'commercial'].includes(s)) return 'commercial';
+    return '';
+  };
   const nodes = [];
   let httpSkipped = 0;
-  let bCountryIdx = -1; // TURN 工具格式表头里 EXIT_LOCATION_COUNTRY 的列号
-  const push = (stype, host, port, user, pass, country) => {
+  let bCountryIdx = -1, bDcIdx = -1; // TURN 工具格式表头里国家/机房列的列号
+  const push = (stype, host, port, user, pass, country, hint) => {
     if (stype === 'http') { httpSkipped++; return; }
     if ((stype !== 'https' && stype !== 'turn') || !host || !isPort(String(port))) return;
     const zh = country ? (EN2ZH[country] || country) : '';
-    nodes.push({ host, port: +port, user: user || '', pass: pass || '', country: zh, code: ZH2CODE[zh] || 'XX', stype });
+    nodes.push({ host, port: +port, user: user || '', pass: pass || '', country: zh, code: ZH2CODE[zh] || 'XX', stype, hint: hint || '' });
   };
   if (!fs.existsSync(SOURCES_DIR)) return nodes;
   for (const f of fs.readdirSync(SOURCES_DIR).filter(x => x.endsWith('.csv')).sort()) {
@@ -166,7 +172,11 @@ function loadExtraNodes() {
       const t = raw.replace(/^\uFEFF/, '').trim();
       if (!t || t.startsWith('#')) continue;
       const f6 = t.split(',').map(x => x.trim());
-      if (f6.includes('EXIT_LOCATION_COUNTRY')) { bCountryIdx = f6.indexOf('EXIT_LOCATION_COUNTRY'); continue; }
+      if (f6[0] === 'TYPE' || f6.includes('EXIT_LOCATION_COUNTRY') || f6.includes('EXIT_IS_DATACENTER')) {
+        const i = f6.indexOf('EXIT_LOCATION_COUNTRY'); if (i >= 0) bCountryIdx = i;
+        const j = f6.indexOf('EXIT_IS_DATACENTER'); if (j >= 0) bDcIdx = j;
+        continue;
+      }
       // 分支 1/2：行里带完整链接（扫描格式第 2 列 / 直接粘链接第 1 列）
       let nodeStr = '', countryHint = '';
       if (f6[1] && f6[1].includes('://')) { nodeStr = f6[1]; countryHint = f6[4] || ''; }
@@ -183,13 +193,13 @@ function loadExtraNodes() {
         const ci2 = rest.lastIndexOf(':');
         const host = ci2 > 0 ? rest.slice(0, ci2) : rest;
         const port = ci2 > 0 ? rest.slice(ci2 + 1) : (scheme === 'turn' ? '3478' : '443');
-        push(scheme, host, port, user, pass, countryHint);
+        push(scheme, host, port, user, pass, countryHint, mapHint(f6[2]));
         continue;
       }
-      // 分支 3：统一格式 type,host,port,user,pass,country
-      if (isPort(f6[2])) { push(f6[0], f6[1], f6[2], f6[3], f6[4], f6[5] || ''); continue; }
+      // 分支 3：统一格式 type,host,port,user,pass,country[,hint]
+      if (isPort(f6[2])) { push(f6[0], f6[1], f6[2], f6[3], f6[4], f6[5] || '', mapHint(f6[6])); continue; }
       // 分支 4：TURN 工具格式 TYPE,USERNAME,PASSWORD,HOSTNAME,PORT,LINK,…
-      if (isPort(f6[4])) { push(f6[0], f6[3], f6[4], f6[1], f6[2], bCountryIdx >= 0 ? (f6[bCountryIdx] || '') : ''); continue; }
+      if (isPort(f6[4])) { push(f6[0], f6[3], f6[4], f6[1], f6[2], bCountryIdx >= 0 ? (f6[bCountryIdx] || '') : '', bDcIdx >= 0 && String(f6[bDcIdx]).toLowerCase() === 'true' ? 'commercial' : ''); continue; }
     }
   }
   const seen = new Set(), out = [];
@@ -204,16 +214,19 @@ function loadExtraNodes() {
 }
 
 // ---------------------------------------------------------------- 检测
-function classify(host, org, isDc) {
-  if (isDc === true) return 'datacenter';
-  if (isDc === false) return 'residential';
-  const o = (org || '').toUpperCase();
+function classify(host, exit, hint) {
+  const types = [exit?.asn?.type, exit?.company?.type].map(x => String(x || '').toLowerCase());
+  if (exit?.is_datacenter === true || exit?.privacy?.is_hosting === true
+    || types.some(t => t === 'hosting' || t === 'business' || t === 'education' || t === 'government' || t === 'military')) return 'commercial';
+  if (types.includes('isp')) return 'residential';
+  const o = String(exit?.asn?.org || exit?.asn?.name || exit?.company?.name || '').toUpperCase();
   if (o) {
-    if (DC_KEYWORDS.some(k => o.includes(k))) return 'datacenter';
+    if (DC_KEYWORDS.some(k => o.includes(k))) return 'commercial';
     if (RES_KEYWORDS.some(k => o.includes(k))) return 'residential';
   }
+  if (hint === 'residential' || hint === 'commercial') return hint;
   const h = host.toLowerCase();
-  if (h.startsWith('public-vpn')) return 'datacenter';
+  if (h.startsWith('public-vpn')) return 'commercial';
   if (/^vpn\d{5,}/.test(h) || /^vpnv\d+/.test(h)) return 'residential';
   return 'unknown';
 }
@@ -233,8 +246,7 @@ async function checkOne(node) {
     out.error = out.success ? null : (j.error || j.message || 'check failed');
     // 出口查询被限流/报错（如 iplocate 429）：隧道已打通（拿到了它的 HTTP 响应）→ 节点算可用
     if (!out.success && /lookup request failed: HTTP\/1\.1 \d+/i.test(out.error)) { out.success = true; out.tunnelOnly = true; out.error = null; }
-    const org = out.exit?.asn?.org || out.exit?.asn?.name || '';
-    out.kind = classify(node.host, org, out.exit?.is_datacenter);
+    out.kind = classify(node.host, out.exit, node.hint);
   } catch (e) { out.error = (e.name || 'Error') + ': ' + e.message; }
   return out;
 }
@@ -290,7 +302,7 @@ function main() {
     let ok = results.filter(r => r.success);
     console.log(`[检测] 可用 ${ok.length}/${results.length}（其中 ${ok.filter(r => !r.exit).length} 个仅确认隧道通）`);
     for (const r of failed) console.log(`  ✗ [${r.stype}] ${r.host}:${r.port} — ${r.error}`);
-    if (ONLY_RES) { const n0 = ok.length; ok = ok.filter(r => r.stype !== 'sstp' || r.kind === 'residential'); console.log(`[筛选] 只留家宽：${n0} → ${ok.length}（去掉 ${n0 - ok.length} 个 SSTP 机房/未识别）`); }
+    if (ONLY_RES) { const n0 = ok.length; ok = ok.filter(r => r.stype !== 'sstp' || r.kind === 'residential'); console.log(`[筛选] 只留家宽：${n0} → ${ok.length}（去掉 ${n0 - ok.length} 个 SSTP 非住宅）`); }
 
     // 按国家分组
     const byC = new Map();
@@ -300,7 +312,7 @@ function main() {
       byC.get(c).push(n);
     }
     const countries = [...byC.entries()].map(([code, ns]) => {
-      const prio = n => n.stype === 'sstp' ? (n.kind === 'residential' ? 0 : 1) : (n.stype === 'https' ? 2 : 3);
+      const prio = n => (n.stype === 'sstp' ? 0 : n.stype === 'https' ? 2 : 4) + (n.kind === 'residential' ? 0 : 1);
       ns.sort((a, b) => prio(a) - prio(b) || (a.latency ?? 9e9) - (b.latency ?? 9e9) || a.host.localeCompare(b.host));
       return { code, zh: COUNTRY_ZH[code] || code, nodes: ns };
     }).sort((a, b) => b.nodes.length - a.nodes.length || a.code.localeCompare(b.code));
@@ -313,7 +325,8 @@ function main() {
       const lines = [];
       const cnt = {};
       for (const n of c.nodes) {
-        const label = n.stype === 'sstp' ? (n.kind === 'residential' ? '住宅' : '机房') : (n.stype === 'https' ? 'HTTPS' : 'TURN');
+        const cls = n.kind === 'residential' ? '住宅' : n.kind === 'commercial' ? '商业' : '未知';
+        const label = n.stype === 'sstp' ? cls : `${n.stype === 'https' ? 'HTTPS' : 'TURN'}-${cls}`;
         const nn = String(cnt[label] = (cnt[label] || 0) + 1).padStart(2, '0');
         const link = akLink(n, `${c.zh}-${label}-${nn}`);
         lines.push(link); all.push(link);
@@ -333,6 +346,7 @@ function main() {
       checked: results.length,
       success: ok.length,
       types: { sstp: ok.filter(r => r.stype === 'sstp').length, https: ok.filter(r => r.stype === 'https').length, turn: ok.filter(r => r.stype === 'turn').length },
+      classes: { residential: ok.filter(r => r.kind === 'residential').length, commercial: ok.filter(r => r.kind === 'commercial').length, unknown: ok.filter(r => r.kind === 'unknown').length },
       countries: countries.map(c => ({ code: c.code, zh: c.zh, count: c.nodes.length })),
     };
     fs.writeFileSync(path.join(DIST, 'stats.json'), JSON.stringify(stats, null, 2) + '\n');
