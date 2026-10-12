@@ -13,6 +13,7 @@ const AK_HOST = 'txs.mavita.kdns.fr'; // 节点域名（AK Worker 的域名）
 const ECH = true; // ECH 参数：true=开（链接带 ech=cloudflare-ech.com+https://223.5.5.5/dns-query），false=关
 const ED = false; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
 const ONLY_RES = true; // 只留家宽：true=清单只保留住宅节点（去掉机房/未识别），false=两种都留
+const AK_ADDRS = ['cf.090227.xyz']; // 优选域名（连接地址）：可填多个，按顺序轮流分给各节点；清空数组=直连 AK_HOST
 // =======================================================================================
 const CONCURRENCY = +(process.env.CHECK_CONCURRENCY || 6);
 const LIMIT = +(process.env.LIMIT || 0); // 本地测试用：只检前 N 个（0=全部）
@@ -175,14 +176,16 @@ async function checkAll(nodes) {
 }
 
 // ---------------------------------------------------------------- 生成
+let addrIdx = 0; // 优选域名轮询下标
 function akLink(n, name) {
+  const addr = AK_ADDRS.length ? AK_ADDRS[addrIdx++ % AK_ADDRS.length] : AK_HOST;
   const p = encodeURIComponent(`/sstp://${n.host}:${n.port}${ED ? '?ed=2560' : ''}`);
   const ech = ECH ? `&ech=${encodeURIComponent('cloudflare-ech.com+https://223.5.5.5/dns-query')}` : '';
-  return `vless://${AK_UUID}@${AK_HOST}:443?type=ws&encryption=none&host=${AK_HOST}&path=${p}&security=tls&sni=${AK_HOST}&fp=chrome${ech}&packetEncoding=xudp#${name}`;
+  return `vless://${AK_UUID}@${addr}:443?type=ws&encryption=none&host=${AK_HOST}&path=${p}&security=tls&sni=${AK_HOST}&fp=chrome${ech}&packetEncoding=xudp#${name}`;
 }
 
 function main() {
-  console.log(`[配置] 检测: ${CHECK_WORKER}｜域名: ${AK_HOST}｜UUID: ${AK_UUID}`);
+  console.log(`[配置] 检测: ${CHECK_WORKER}｜域名: ${AK_HOST}｜连接地址: ${AK_ADDRS.length ? AK_ADDRS.join(' / ') : AK_HOST}｜UUID: ${AK_UUID}`);
   return fetchRows().then(async ({ rows, source }) => {
     console.log(`[抓取] 来源 ${source}，原始节点 ${rows.length} 个`);
     let nodes = toSstpNodes(rows);

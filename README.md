@@ -34,10 +34,12 @@ data/                            最近一次生成的清单（工作流回写�
 | ECH 参数 | `ECH`（true=开 / false=关） | `true` |
 | `?ed=2560` 参数 | `ED`（true=带 / false=去掉） | `false` |
 | 只留家宽 | `ONLY_RES`（true=只留家宽 / false=两种都留） | `true` |
+| 优选域名（连接地址） | `AK_ADDRS`（数组，可填多个；留空=直连） | `['cf.090227.xyz']` |
 
 改完去 **Actions → Update AK node list → Run workflow** 手动跑一次立刻生效（不跑就等下一个 12 小时自动跑）。
 
 - 检测地址**结尾必须带 `/check?sstp=vpn:vpn@`**（脚本靠它拼检测网址）
+- 优选域名（`AK_ADDRS`）填多个时会**按顺序轮流分配**给各节点；清空数组 = 恢复直连 `AK_HOST`
 - 换域名后旧链接作废，客户端要重新导入新清单
 - 更新频率：`update.yml` 里的 `cron`（当前 `0 */12 * * *`）
 
