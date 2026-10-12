@@ -281,7 +281,7 @@ async function checkAll(nodes) {
 // ---------------------------------------------------------------- 生成
 let addrIdx = 0; // 优选域名轮询下标
 function akLink(n, name) {
-  const addr = AK_ADDRS.length ? AK_ADDRS[addrIdx++ % AK_ADDRS.length] : AK_HOST;
+  const addr = (AK_ADDRS.length ? AK_ADDRS[addrIdx++ % AK_ADDRS.length] : AK_HOST).replace(/:\d+$/, ''); // 兼容 domain:443 写法（端口固定由模板拼）
   const cred = n.user ? `${n.user}:${n.pass}@` : '';
   let p;
   if (n.stype === 'turn') p = encodeURIComponent(`/turn://${cred}${n.host}:${n.port}${ED ? '?ed=2560' : ''}`);
