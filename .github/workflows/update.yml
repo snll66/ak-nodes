@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: update-ak-nodes
@@ -18,9 +16,6 @@ jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,21 +25,9 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 抓取 VPN Gate + 检测 + 生成清单
+      - name: 抓取 VPN Gate + 检测 + 生成清单 + 上传订阅
         run: node update.mjs
-        # 节点域名 / UUID / 检测 Worker 地址：改 update.mjs 顶部「配置区」三行
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        # 节点域名 / UUID / 检测 Worker / 订阅地址：改 update.mjs 顶部「配置区」
 
       - name: 回写清单（保持仓库活跃，防止 60 天后定时被 GitHub 暂停）
         run: |
