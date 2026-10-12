@@ -31,6 +31,8 @@ data/                            最近一次生成的清单（工作流回写�
 | 节点域名 | `AK_HOST` | `txs.mavita.kdns.fr` |
 | 节点 UUID | `AK_UUID` | `2523c510-9ff0-415b-9582-93949bfae7e3` |
 | 检测 Worker | `CHECK_WORKER` | `https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@` |
+| ECH 参数 | `ECH`（true=开 / false=关） | `true` |
+| `?ed=2560` 参数 | `ED`（true=带 / false=去掉） | `true` |
 
 改完去 **Actions → Update AK node list → Run workflow** 手动跑一次立刻生效（不跑就等下一个 12 小时自动跑）。
 

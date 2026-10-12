@@ -6,11 +6,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// ========== 配置区：换节点域名 / 检测地址 / UUID，就改下面三行引号里的值 ==========
+// ========== 配置区：换节点域名 / 检测地址 / UUID，开关 ECH 和 ed 参数，就改下面几行 ==========
 const CHECK_WORKER = 'https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@'; // 检测 Worker 地址（结尾必须带 /check?sstp=vpn:vpn@）
 const AK_UUID = '2523c510-9ff0-415b-9582-93949bfae7e3'; // 节点 UUID（要和 AK.js 里的一致）
 const AK_HOST = 'txs.mavita.kdns.fr'; // 节点域名（AK Worker 的域名）
-// =============================================================================
+const ECH = true; // ECH 参数：true=开（链接带 ech=cloudflare-ech.com+https://223.5.5.5/dns-query），false=关
+const ED = true; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
+// =======================================================================================
 const CONCURRENCY = +(process.env.CHECK_CONCURRENCY || 6);
 const LIMIT = +(process.env.LIMIT || 0); // 本地测试用：只检前 N 个（0=全部）
 const CHECK_TIMEOUT_MS = +(process.env.CHECK_TIMEOUT_MS || 75000);
@@ -173,8 +175,9 @@ async function checkAll(nodes) {
 
 // ---------------------------------------------------------------- 生成
 function akLink(n, name) {
-  const p = encodeURIComponent(`/sstp://${n.host}:${n.port}?ed=2560`);
-  return `vless://${AK_UUID}@${AK_HOST}:443?type=ws&encryption=none&host=${AK_HOST}&path=${p}&security=tls&sni=${AK_HOST}&fp=chrome&packetEncoding=xudp#${name}`;
+  const p = encodeURIComponent(`/sstp://${n.host}:${n.port}${ED ? '?ed=2560' : ''}`);
+  const ech = ECH ? `&ech=${encodeURIComponent('cloudflare-ech.com+https://223.5.5.5/dns-query')}` : '';
+  return `vless://${AK_UUID}@${AK_HOST}:443?type=ws&encryption=none&host=${AK_HOST}&path=${p}&security=tls&sni=${AK_HOST}&fp=chrome${ech}&packetEncoding=xudp#${name}`;
 }
 
 function main() {
@@ -221,7 +224,7 @@ function main() {
       for (const n of c.nodes) {
         const isRes = n.kind === 'residential';
         const nn = String(isRes ? ++res : ++dc).padStart(2, '0');
-        const link = akLink(n, `AK-SSTP-${c.zh}-${isRes ? '住宅' : '机房'}-${nn}`);
+        const link = akLink(n, `${c.zh}-${isRes ? '住宅' : '机房'}-${nn}`);
         lines.push(link); all.push(link);
       }
       fs.writeFileSync(path.join(DIST, `ak-${c.code}.txt`), lines.join('\n') + '\n');
