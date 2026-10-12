@@ -19,6 +19,7 @@
 update.mjs                       抓取 + 检测 + 生成（Node，零依赖）
 .github/workflows/update.yml     每 12 小时跑一次（也支持手动触发）
 check-worker/                    检测 Worker 源码（部署在 Cloudflare）
+sources/                         附加数据源（*.csv：type,host,port,user,pass,country）
 data/                            最近一次生成的清单（工作流回写，保持仓库活跃）
 ```
 
@@ -45,9 +46,9 @@ data/                            最近一次生成的清单（工作流回写�
 
 ## 原理
 
-1. 拉 VPN Gate 官方列表（回退：GitHub 镜像），从每个节点的 OpenVPN 配置里提取 SSTP 端口（`proto tcp` + `remote` 行）；
-2. 逐个调用自建检测 Worker（跑在 Cloudflare 上，`/check?sstp=vpn:vpn@host:port`）——只有「从 CF 能连上」的节点才保留；
-3. 生成 AK 格式的 VLESS 链接（`/sstp://host:port` 路径 + 出口位置标注），发布到 GitHub Pages。
+1. 拉 VPN Gate 官方列表（回退：GitHub 镜像），从每个节点的 OpenVPN 配置里提取 SSTP 端口（`proto tcp` + `remote` 行）；同时读取 `sources/` 里的附加节点（HTTPS / TURN）；
+2. 逐个调用自建检测 Worker（跑在 Cloudflare 上，`/check?sstp=…`、`/check?turn=…`、`/check?https=…`）——只有「从 CF 能连上」的节点才保留；
+3. 生成 AK 格式的 VLESS 链接（`/sstp://…`、`/turn://…`、`/?https://…` 三种路径，节点名带国家与类型，如 `日本-住宅-01`、`法国-TURN-02`），发布到 GitHub Pages。
 
 ## 致谢
 

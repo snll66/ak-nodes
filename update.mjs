@@ -1,6 +1,6 @@
-// update.mjs —— VPN Gate SSTP 节点 → 检测 → 生成 AK 客户端链接清单
-// 数据源: https://www.vpngate.net/api/iphone/（回退: fdciabdul/Vpngate-Scraper-API 镜像）
-// 检测: 自建 CF 检测 Worker（cmliu/CF-Workers-CheckSocks5，地址在 CHECK_WORKER 环境变量）
+// update.mjs —— VPN Gate SSTP + 附加数据源（HTTPS/TURN）→ 检测 → 生成 AK 客户端链接清单
+// 数据源: https://www.vpngate.net/api/iphone/（回退: fdciabdul/Vpngate-Scraper-API 镜像）+ sources/*.csv
+// 检测: 自建 CF 检测 Worker（cmliu/CF-Workers-CheckSocks5，地址在顶部配置区）
 // 输出: dist/ak.txt（全部）+ dist/ak-<国家>.txt（分国家）+ dist/stats.json + dist/index.html
 // 无第三方依赖（Node 18+ 原生 fetch）
 import fs from 'node:fs';
@@ -15,10 +15,13 @@ const ED = false; // ?ed=2560 参数：true=带，false=去掉（path 变成 /ss
 const ONLY_RES = true; // 只留家宽：true=清单只保留住宅节点（去掉机房/未识别），false=两种都留
 const AK_ADDRS = ['cf.090227.xyz']; // 优选域名（连接地址）：可填多个，按顺序轮流分给各节点；清空数组=直连 AK_HOST
 // =======================================================================================
+const CHECK_BASE = CHECK_WORKER.split('?')[0]; // 检测接口基地址（各类型分别拼 ?sstp= / ?turn= / ?https=）
 const CONCURRENCY = +(process.env.CHECK_CONCURRENCY || 6);
-const LIMIT = +(process.env.LIMIT || 0); // 本地测试用：只检前 N 个（0=全部）
+const LIMIT = +(process.env.LIMIT || 0); // 本地测试用：只检前 N 个 SSTP（0=全部）
+const SKIP_EXTRA = process.env.SKIP_EXTRA === '1'; // 本地测试用：跳过附加数据源
 const CHECK_TIMEOUT_MS = +(process.env.CHECK_TIMEOUT_MS || 75000);
 const DIST = path.resolve(import.meta.dirname, 'dist');
+const SOURCES_DIR = path.resolve(import.meta.dirname, 'sources'); // 附加数据源目录（*.csv）
 const UA = { 'User-Agent': 'Mozilla/5.0 (ak-nodes)' };
 
 const COUNTRY_ZH = {
@@ -33,6 +36,7 @@ const COUNTRY_ZH = {
   RS: '塞尔维亚', GE: '格鲁吉亚', MD: '摩尔多瓦', AM: '亚美尼亚', KZ: '哈萨克斯坦', UZ: '乌兹别克斯坦',
   MN: '蒙古', NP: '尼泊尔', LK: '斯里兰卡', MM: '缅甸',
 };
+const ZH2CODE = Object.fromEntries(Object.entries(COUNTRY_ZH).map(([k, v]) => [v, k]));
 const DC_KEYWORDS = ['AMAZON', 'AWS', 'GOOGLE', 'MICROSOFT', 'AZURE', 'DIGITALOCEAN', 'LINODE', 'AKAMAI', 'VULTR',
   'OVH', 'HETZNER', 'ALIBABA', 'ALICLOUD', 'TENCENT', 'ORACLE', 'CLOUDFLARE', 'CHOOPA', 'CONTABO', 'IONOS',
   'LEASEWEB', 'M247', 'G-CORE', 'COLOCROSSING', 'QUICKPACKET', 'XTOM', 'BANDWAGON', 'VPS', 'SERVER',
@@ -114,7 +118,7 @@ function toSstpNodes(rows) {
     if (!(port >= 1 && port <= 65535)) continue;
     let host = r.host;
     if (!host.endsWith('.opengw.net')) host += '.opengw.net';
-    nodes.push({ host, port, ip: r.ip, country: r.country, code: r.code });
+    nodes.push({ host, port, ip: r.ip, country: r.country, code: r.code, stype: 'sstp' });
   }
   const seen = new Set(), out = [];
   for (const n of nodes) {
@@ -122,6 +126,36 @@ function toSstpNodes(rows) {
     if (seen.has(k)) continue;
     seen.add(k); out.push(n);
   }
+  return out;
+}
+
+// ---------------------------------------------------------------- 附加数据源（HTTPS / TURN）
+// 格式：sources/*.csv，表头 type,host,port,user,pass,country（country 用中文，如 日本/法国）
+function loadExtraNodes() {
+  const nodes = [];
+  if (!fs.existsSync(SOURCES_DIR)) return nodes;
+  for (const f of fs.readdirSync(SOURCES_DIR).filter(x => x.endsWith('.csv')).sort()) {
+    let text = '';
+    try { text = fs.readFileSync(path.join(SOURCES_DIR, f), 'utf8'); } catch { continue; }
+    for (const ln of text.split(/\r?\n/)) {
+      const t = ln.trim();
+      if (!t || t.startsWith('type,') || t.startsWith('#')) continue;
+      const f6 = t.split(',');
+      if (f6.length < 6) continue;
+      const [stype, host, portS, user, pass, country] = f6.map(x => x.trim());
+      if (!host || (stype !== 'https' && stype !== 'turn')) continue;
+      const port = +portS;
+      if (!(port >= 1 && port <= 65535)) continue;
+      nodes.push({ host, port, user, pass, country, code: ZH2CODE[country] || 'XX', stype });
+    }
+  }
+  const seen = new Set(), out = [];
+  for (const n of nodes) {
+    const k = `${n.stype}:${n.host.toLowerCase()}:${n.port}`;
+    if (seen.has(k)) continue;
+    seen.add(k); out.push(n);
+  }
+  console.log(`[源] 附加数据源 ${out.length} 个（HTTPS ${out.filter(n => n.stype === 'https').length}、TURN ${out.filter(n => n.stype === 'turn').length}）`);
   return out;
 }
 
@@ -141,7 +175,8 @@ function classify(host, org, isDc) {
 }
 
 async function checkOne(node) {
-  const url = CHECK_WORKER + encodeURIComponent(`${node.host}:${node.port}`);
+  const cred = node.user ? `${node.user}:${node.pass}@` : (node.stype === 'sstp' ? 'vpn:vpn@' : '');
+  const url = `${CHECK_BASE}/check?${node.stype || 'sstp'}=${encodeURIComponent(cred + node.host + ':' + node.port)}`;
   const out = { ...node, success: false, error: null, latency: null, colo: null, exit: null, kind: 'unknown' };
   try {
     const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(CHECK_TIMEOUT_MS) });
@@ -179,7 +214,11 @@ async function checkAll(nodes) {
 let addrIdx = 0; // 优选域名轮询下标
 function akLink(n, name) {
   const addr = AK_ADDRS.length ? AK_ADDRS[addrIdx++ % AK_ADDRS.length] : AK_HOST;
-  const p = encodeURIComponent(`/sstp://${n.host}:${n.port}${ED ? '?ed=2560' : ''}`);
+  const cred = n.user ? `${n.user}:${n.pass}@` : '';
+  let p;
+  if (n.stype === 'turn') p = encodeURIComponent(`/turn://${cred}${n.host}:${n.port}${ED ? '?ed=2560' : ''}`);
+  else if (n.stype === 'https') p = encodeURIComponent(`/?https://${cred}${n.host}:${n.port}&insecure`);
+  else p = encodeURIComponent(`/sstp://${n.host}:${n.port}${ED ? '?ed=2560' : ''}`);
   const ech = ECH ? `&ech=${encodeURIComponent('cloudflare-ech.com+https://223.5.5.5/dns-query')}` : '';
   return `vless://${AK_UUID}@${addr}:443?type=ws&encryption=none&host=${AK_HOST}&path=${p}&security=tls&sni=${AK_HOST}&fp=chrome${ech}&packetEncoding=xudp#${name}`;
 }
@@ -190,21 +229,24 @@ function main() {
     console.log(`[抓取] 来源 ${source}，原始节点 ${rows.length} 个`);
     let nodes = toSstpNodes(rows);
     console.log(`[筛选] SSTP(带 TCP 入口) 节点 ${nodes.length} 个`);
-    if (LIMIT > 0) { nodes = nodes.slice(0, LIMIT); console.log(`[测试] LIMIT=${LIMIT}，只检测前 ${nodes.length} 个`); }
+    if (LIMIT > 0) { nodes = nodes.slice(0, LIMIT); console.log(`[测试] LIMIT=${LIMIT}，只检测前 ${nodes.length} 个 SSTP`); }
+    const sstpCount = nodes.length;
+    if (SKIP_EXTRA) console.log('[测试] SKIP_EXTRA=1，跳过附加数据源');
+    else nodes = nodes.concat(loadExtraNodes());
     let results = await checkAll(nodes, CONCURRENCY);
     let failed = results.filter(r => !r.success);
     if (failed.length) {
       console.log(`[重试] 对 ${failed.length} 个失败节点低并发重试一轮...`);
       await new Promise(r => setTimeout(r, 5000));
-      const retried = await checkAll(failed.map(r => ({ host: r.host, port: r.port, ip: r.ip, country: r.country, code: r.code })), 2);
-      const map = new Map(retried.map(r => [`${r.host}:${r.port}`, r]));
-      results = results.map(r => map.get(`${r.host}:${r.port}`) || r);
+      const retried = await checkAll(failed.map(r => ({ host: r.host, port: r.port, user: r.user, pass: r.pass, stype: r.stype, ip: r.ip, country: r.country, code: r.code })), 2);
+      const map = new Map(retried.map(r => [`${r.stype}:${r.host}:${r.port}`, r]));
+      results = results.map(r => map.get(`${r.stype}:${r.host}:${r.port}`) || r);
       failed = results.filter(r => !r.success);
     }
     let ok = results.filter(r => r.success);
     console.log(`[检测] 可用 ${ok.length}/${results.length}（其中 ${ok.filter(r => !r.exit).length} 个仅确认隧道通）`);
-    for (const r of failed) console.log(`  ✗ ${r.host}:${r.port} — ${r.error}`);
-    if (ONLY_RES) { const n0 = ok.length; ok = ok.filter(r => r.kind === 'residential'); console.log(`[筛选] 只留家宽：${n0} → ${ok.length}（去掉 ${n0 - ok.length} 个机房/未识别）`); }
+    for (const r of failed) console.log(`  ✗ [${r.stype}] ${r.host}:${r.port} — ${r.error}`);
+    if (ONLY_RES) { const n0 = ok.length; ok = ok.filter(r => r.stype !== 'sstp' || r.kind === 'residential'); console.log(`[筛选] 只留家宽：${n0} → ${ok.length}（去掉 ${n0 - ok.length} 个 SSTP 机房/未识别）`); }
 
     // 按国家分组
     const byC = new Map();
@@ -214,8 +256,8 @@ function main() {
       byC.get(c).push(n);
     }
     const countries = [...byC.entries()].map(([code, ns]) => {
-      ns.sort((a, b) => (a.kind === 'residential' ? 0 : 1) - (b.kind === 'residential' ? 0 : 1)
-        || (a.latency ?? 9e9) - (b.latency ?? 9e9) || a.host.localeCompare(b.host));
+      const prio = n => n.stype === 'sstp' ? (n.kind === 'residential' ? 0 : 1) : (n.stype === 'https' ? 2 : 3);
+      ns.sort((a, b) => prio(a) - prio(b) || (a.latency ?? 9e9) - (b.latency ?? 9e9) || a.host.localeCompare(b.host));
       return { code, zh: COUNTRY_ZH[code] || code, nodes: ns };
     }).sort((a, b) => b.nodes.length - a.nodes.length || a.code.localeCompare(b.code));
 
@@ -225,11 +267,11 @@ function main() {
     const all = [];
     for (const c of countries) {
       const lines = [];
-      let res = 0, dc = 0;
+      const cnt = {};
       for (const n of c.nodes) {
-        const isRes = n.kind === 'residential';
-        const nn = String(isRes ? ++res : ++dc).padStart(2, '0');
-        const link = akLink(n, `${c.zh}-${isRes ? '住宅' : '机房'}-${nn}`);
+        const label = n.stype === 'sstp' ? (n.kind === 'residential' ? '住宅' : '机房') : (n.stype === 'https' ? 'HTTPS' : 'TURN');
+        const nn = String(cnt[label] = (cnt[label] || 0) + 1).padStart(2, '0');
+        const link = akLink(n, `${c.zh}-${label}-${nn}`);
         lines.push(link); all.push(link);
       }
       fs.writeFileSync(path.join(DIST, `ak-${c.code}.txt`), lines.join('\n') + '\n');
@@ -242,9 +284,11 @@ function main() {
       source,
       worker: CHECK_WORKER,
       raw_nodes: rows.length,
-      sstp_nodes: nodes.length,
+      sstp_nodes: sstpCount,
+      extra_nodes: nodes.length - sstpCount,
       checked: results.length,
       success: ok.length,
+      types: { sstp: ok.filter(r => r.stype === 'sstp').length, https: ok.filter(r => r.stype === 'https').length, turn: ok.filter(r => r.stype === 'turn').length },
       countries: countries.map(c => ({ code: c.code, zh: c.zh, count: c.nodes.length })),
     };
     fs.writeFileSync(path.join(DIST, 'stats.json'), JSON.stringify(stats, null, 2) + '\n');
