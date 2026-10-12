@@ -11,7 +11,7 @@ const CHECK_WORKER = 'https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@
 const AK_UUID = '2523c510-9ff0-415b-9582-93949bfae7e3'; // 节点 UUID（要和 AK.js 里的一致）
 const AK_HOST = 'txs.mavita.kdns.fr'; // 节点域名（AK Worker 的域名）
 const ECH = true; // ECH 参数：true=开（链接带 ech=cloudflare-ech.com+https://223.5.5.5/dns-query），false=关
-const ED = true; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
+const ED = false; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
 // =======================================================================================
 const CONCURRENCY = +(process.env.CHECK_CONCURRENCY || 6);
 const LIMIT = +(process.env.LIMIT || 0); // 本地测试用：只检前 N 个（0=全部）
