@@ -13,7 +13,7 @@ const AK_HOST = 'txs.mavita.kdns.fr'; // 节点域名（AK Worker 的域名）
 const ECH = true; // ECH 参数：true=开（链接带 ech=cloudflare-ech.com+https://223.5.5.5/dns-query），false=关
 const ED = false; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
 const ONLY_RES = true; // 只留住宅：true=清单只保留住宅节点（没住宅的国家保留延迟最低 1 个兜底），false=全类型都留
-const AK_ADDRS = ['cf.090227.xyz']; // 优选域名（连接地址）：可填多个，按顺序轮流分给各节点；清空数组=直连 AK_HOST
+const AK_ADDRS = ['cf.090227.xyz','cf.877774.xyz','www.ox.ac.uk','openai.com:443','yg1.ygkkk.dpdns.org','www.samsungbiologics.com']; // 优选域名（连接地址）：可填多个，按顺序轮流分给各节点；清空数组=直连 AK_HOST
 // =======================================================================================
 const CHECK_BASE = CHECK_WORKER.split('?')[0]; // 检测接口基地址（各类型分别拼 ?sstp= / ?turn= / ?https=）
 const CONCURRENCY = +(process.env.CHECK_CONCURRENCY || 6);
