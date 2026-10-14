@@ -9,9 +9,9 @@ import path from 'node:path';
 // ========== 配置区：换节点域名 / 检测地址 / UUID，开关 ECH / ed / 只留家宽，就改下面几行 ==========
 const CHECK_WORKER = 'https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@'; // 检测 Worker 地址（结尾必须带 /check?sstp=vpn:vpn@）
 const AK_UUID = 'b2b57076-0c14-48d9-8c1c-84785746b29d'; // 节点 UUID（要和 AK.js 里的一致）
-const AK_HOST = 'txs.mavita.kdns.fr'; // 节点域名（AK Worker 的域名）
+const AK_HOST = 'q.4.j.9.0.g.123.kdns.fr'; // 节点域名（AK Worker 的域名）
 const ECH = true; // ECH 参数：true=开（链接带 ech=cloudflare-ech.com+https://223.5.5.5/dns-query），false=关
-const ED = false; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
+const ED = true; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
 const ONLY_RES = true; // 只留住宅：true=清单只保留住宅节点（没住宅的国家保留延迟最低 1 个兜底），false=全类型都留
 const AK_ADDRS = ['cf.090227.xyz','cf.877774.xyz','www.ox.ac.uk','openai.com','yg1.ygkkk.dpdns.org','www.samsungbiologics.com']; // 优选域名（连接地址）：可填多个，按顺序轮流分给各节点；清空数组=直连 AK_HOST
 const SUB_URL = 'https://txs.mavita.kdns.fr/5dc5ff379b90a6697d1a5ab6/ak.txt'; // 订阅地址（客户端从这里取清单）
