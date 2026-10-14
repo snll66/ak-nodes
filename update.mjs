@@ -8,7 +8,7 @@ import path from 'node:path';
 
 // ========== 配置区：换节点域名 / 检测地址 / UUID，开关 ECH / ed / 只留家宽，就改下面几行 ==========
 const CHECK_WORKER = 'https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@'; // 检测 Worker 地址（结尾必须带 /check?sstp=vpn:vpn@）
-const AK_UUID = 'b2b57076-0c14-48d9-8c1c-84785746b29d'; // 节点 UUID（要和 AK.js 里的一致）
+const AK_UUID = '2523c510-9ff0-415b-9582-93949bfae7e3'; // 节点 UUID（要和 AK.js 里的一致）
 const AK_HOST = 'q.4.j.9.0.g.123.kdns.fr'; // 节点域名（AK Worker 的域名）
 const ECH = true; // ECH 参数：true=开（链接带 ech=cloudflare-ech.com+https://223.5.5.5/dns-query），false=关
 const ED = true; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
