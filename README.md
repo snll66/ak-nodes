@@ -1,6 +1,6 @@
 # ak-nodes —— VPN Gate SSTP 节点自动清单（AK 用）
 
-每 **12 小时**自动：抓取 [VPN Gate](https://www.vpngate.net/) 的 SSTP 节点 → 用自建 CF 检测 Worker 逐个验活 → 生成 **AK 客户端**（VLESS 链接）清单，发布到 GitHub Pages（客户端从订阅地址拉取）。
+每 **2 小时**自动：抓取 [VPN Gate](https://www.vpngate.net/) 的 SSTP 节点 → 用自建 CF 检测 Worker 逐个验活 → 生成 **AK 客户端**（VLESS 链接）清单，发布到 GitHub Pages（客户端从订阅地址拉取）。
 
 ## 订阅地址（客户端用这个）
 
@@ -8,7 +8,7 @@
 https://snll66.github.io/ak-nodes/ak.txt
 ```
 
-每行一条 `vless://` 链接，直接导入客户端（如 v2rayNG）当**订阅**用，每 12 小时自动更新。
+每行一条 `vless://` 链接，直接导入客户端（如 v2rayNG）当**订阅**用，每 2 小时自动更新。
 
 ## 产物
 
@@ -22,7 +22,7 @@ https://snll66.github.io/ak-nodes/ak.txt
 
 ```
 update.mjs                       抓取 + 检测 + 生成（Node，零依赖）
-.github/workflows/update.yml     每 12 小时跑一次（也支持手动触发）
+.github/workflows/update.yml     每 2 小时跑一次（也支持手动触发）
 check-worker/                    检测 Worker 源码（部署在 Cloudflare）
 sources/                         附加数据源（*.csv，原样粘贴扫描结果即可）
 data/                            最近一次生成的清单（工作流回写，保持仓库活跃）
@@ -35,14 +35,14 @@ data/                            最近一次生成的清单（工作流回写�
 | 要换什么 | 改哪一行 | 当前值 |
 |---|---|---|
 | 节点域名 | `AK_HOST` | `q.4.j.9.0.g.123.kdns.fr` |
-| 节点 UUID | `AK_UUID` | `b2b57076-…`（与 AK.js 一致） |
+| 节点 UUID | `AK_UUID` | `2523c510-…`（与 AK.js 一致） |
 | 检测 Worker | `CHECK_WORKER` | `https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@` |
 | ECH 参数 | `ECH`（true=开 / false=关） | `true` |
 | `?ed=2560` 参数 | `ED`（true=带 / false=去掉） | `true` |
 | 只留住宅 | `ONLY_RES`（true=只留住宅，无住宅的国家保留 1 个兜底 / false=全都留） | `true` |
 | 优选域名（连接地址） | `AK_ADDRS`（数组，可填多个；留空=直连） | 6 个域名轮询 |
 
-改完去 **Actions → Update AK node list → Run workflow** 手动跑一次立刻生效（不跑就等下一个 12 小时自动跑）。
+改完去 **Actions → Update AK node list → Run workflow** 手动跑一次立刻生效（不跑就等下一个 2 小时自动跑）。
 
 ## 原理
 

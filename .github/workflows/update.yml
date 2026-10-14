@@ -2,7 +2,7 @@ name: Update AK node list
 
 on:
   schedule:
-    - cron: '0 */12 * * *'   # 每 12 小时（UTC 0/12 点 = 北京时间 8/20 点）
+    - cron: '0 */2 * * *'   # 每 2 小时一次（UTC 偶数点）
   workflow_dispatch:          # 支持手动触发
 
 permissions:
