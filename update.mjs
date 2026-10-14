@@ -14,9 +14,6 @@ const ECH = true; // ECH 参数：true=开（链接带 ech=cloudflare-ech.com+ht
 const ED = true; // ?ed=2560 参数：true=带，false=去掉（path 变成 /sstp://节点:端口）
 const ONLY_RES = true; // 只留住宅：true=清单只保留住宅节点（没住宅的国家保留延迟最低 1 个兜底），false=全类型都留
 const AK_ADDRS = ['cf.090227.xyz','cf.877774.xyz','www.ox.ac.uk','openai.com','yg1.ygkkk.dpdns.org','www.samsungbiologics.com']; // 优选域名（连接地址）：可填多个，按顺序轮流分给各节点；清空数组=直连 AK_HOST
-const SUB_URL = 'https://txs.mavita.kdns.fr/5dc5ff379b90a6697d1a5ab6/ak.txt'; // 订阅地址（客户端从这里取清单）
-const SUB_UPD_URL = 'https://txs.mavita.kdns.fr/5dc5ff379b90a6697d1a5ab6/update'; // 订阅上传入口（POST + 令牌）
-const SUB_TOKEN = '400a716eedf04296239362f68005e834'; // 上传令牌（必须与 AK.js 里 SUB_TOKEN 一致）
 // =======================================================================================
 const CHECK_BASE = CHECK_WORKER.split('?')[0]; // 检测接口基地址（各类型分别拼 ?sstp= / ?turn= / ?https=）
 const CONCURRENCY = +(process.env.CHECK_CONCURRENCY || 6);
@@ -385,20 +382,6 @@ function main() {
     fs.writeFileSync(path.join(DIST, 'index.html'), html);
 
     console.log(`[完成] 共 ${all.length} 条链接 → dist/ak.txt`);
-
-    // 上传订阅到 AK Worker（替代 GitHub Pages；本地测试用 SKIP_UPLOAD=1 跳过）
-    if (process.env.SKIP_UPLOAD === '1') { console.log('[订阅] SKIP_UPLOAD=1，跳过上传'); return; }
-    const body = fs.readFileSync(path.join(DIST, 'ak.txt'), 'utf8');
-    const up = await fetch(SUB_UPD_URL, { method: 'POST', headers: { 'x-sub-token': SUB_TOKEN }, body });
-    if (!up.ok) throw new Error(`订阅上传失败：HTTP ${up.status} ${await up.text()}`);
-    console.log(`[订阅] 已上传 ${body.length} 字节 → ${SUB_URL}`);
-    for (let i = 1; i <= 3; i++) {
-      const got = await fetch(SUB_URL, { headers: { 'cache-control': 'no-cache' } }).then(r => r.text()).catch(() => null);
-      if (got === body) { console.log('[订阅] 回读校验一致 ✓'); return; }
-      console.log(`[订阅] 回读暂不一致（第 ${i}/3 次；KV 全球同步最长 60 秒，属正常）`);
-      await new Promise(r => setTimeout(r, 3000));
-    }
-    console.log('[订阅] ⚠️ 回读三次未同步——KV 正常延迟，下轮自动覆盖');
   });
 }
 
