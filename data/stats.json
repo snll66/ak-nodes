@@ -1,52 +1,42 @@
 {
-  "generated_at": "2026-10-16 08:51:18 UTC",
+  "generated_at": "2026-10-16 14:40:21 UTC",
   "source": "vpngate.net/api/iphone",
   "worker": "https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@",
-  "raw_nodes": 99,
-  "sstp_nodes": 83,
+  "raw_nodes": 100,
+  "sstp_nodes": 88,
   "extra_nodes": 0,
-  "checked": 83,
-  "success": 46,
-  "available": 69,
+  "checked": 88,
+  "success": 44,
+  "available": 63,
   "types": {
-    "sstp": 69,
+    "sstp": 63,
     "https": 0,
     "turn": 0
   },
   "classes": {
-    "residential": 44,
-    "commercial": 25,
+    "residential": 43,
+    "commercial": 20,
     "unknown": 0
   },
   "countries": [
     {
-      "code": "KR",
-      "zh": "韩国",
-      "count": 21
-    },
-    {
       "code": "JP",
       "zh": "日本",
-      "count": 16
+      "count": 18
     },
     {
-      "code": "VN",
-      "zh": "越南",
+      "code": "KR",
+      "zh": "韩国",
+      "count": 18
+    },
+    {
+      "code": "RU",
+      "zh": "俄罗斯",
       "count": 3
     },
     {
-      "code": "US",
-      "zh": "美国",
-      "count": 2
-    },
-    {
-      "code": "AU",
-      "zh": "澳大利亚",
-      "count": 1
-    },
-    {
-      "code": "DE",
-      "zh": "德国",
+      "code": "GD",
+      "zh": "格林纳达",
       "count": 1
     },
     {
@@ -55,8 +45,18 @@
       "count": 1
     },
     {
-      "code": "LV",
-      "zh": "拉脱维亚",
+      "code": "TH",
+      "zh": "泰国",
+      "count": 1
+    },
+    {
+      "code": "US",
+      "zh": "美国",
+      "count": 1
+    },
+    {
+      "code": "VN",
+      "zh": "越南",
       "count": 1
     }
   ]
