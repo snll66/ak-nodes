@@ -1,47 +1,47 @@
 {
-  "generated_at": "2026-10-25 20:33:42 UTC",
+  "generated_at": "2026-10-25 23:56:48 UTC",
   "source": "vpngate.net/api/iphone",
   "worker": "https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@",
-  "raw_nodes": 98,
-  "sstp_nodes": 82,
+  "raw_nodes": 97,
+  "sstp_nodes": 79,
   "extra_nodes": 0,
-  "checked": 82,
-  "success": 33,
-  "available": 51,
+  "checked": 79,
+  "success": 40,
+  "available": 53,
   "types": {
-    "sstp": 51,
+    "sstp": 53,
     "https": 0,
     "turn": 0
   },
   "classes": {
-    "residential": 30,
-    "commercial": 20,
-    "unknown": 1
+    "residential": 39,
+    "commercial": 14,
+    "unknown": 0
   },
   "countries": [
     {
       "code": "JP",
       "zh": "日本",
-      "count": 14
+      "count": 18
     },
     {
       "code": "KR",
       "zh": "韩国",
-      "count": 8
+      "count": 10
+    },
+    {
+      "code": "VN",
+      "zh": "越南",
+      "count": 6
     },
     {
       "code": "RU",
       "zh": "俄罗斯",
-      "count": 3
-    },
-    {
-      "code": "TH",
-      "zh": "泰国",
       "count": 2
     },
     {
-      "code": "BY",
-      "zh": "白俄罗斯",
+      "code": "BR",
+      "zh": "巴西",
       "count": 1
     },
     {
@@ -50,18 +50,8 @@
       "count": 1
     },
     {
-      "code": "FR",
-      "zh": "法国",
-      "count": 1
-    },
-    {
-      "code": "IT",
-      "zh": "意大利",
-      "count": 1
-    },
-    {
-      "code": "SG",
-      "zh": "新加坡",
+      "code": "TH",
+      "zh": "泰国",
       "count": 1
     },
     {
