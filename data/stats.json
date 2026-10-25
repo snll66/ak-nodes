@@ -1,32 +1,37 @@
 {
-  "generated_at": "2026-10-25 00:06:37 UTC",
+  "generated_at": "2026-10-25 07:24:34 UTC",
   "source": "github-mirror",
   "worker": "https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@",
   "raw_nodes": 99,
   "sstp_nodes": 88,
   "extra_nodes": 0,
   "checked": 88,
-  "success": 17,
-  "available": 41,
+  "success": 37,
+  "available": 57,
   "types": {
-    "sstp": 41,
+    "sstp": 57,
     "https": 0,
     "turn": 0
   },
   "classes": {
-    "residential": 16,
-    "commercial": 25,
+    "residential": 37,
+    "commercial": 20,
     "unknown": 0
   },
   "countries": [
     {
       "code": "JP",
       "zh": "日本",
-      "count": 10
+      "count": 17
     },
     {
       "code": "KR",
       "zh": "韩国",
+      "count": 14
+    },
+    {
+      "code": "TH",
+      "zh": "泰国",
       "count": 2
     },
     {
@@ -40,13 +45,8 @@
       "count": 1
     },
     {
-      "code": "TH",
-      "zh": "泰国",
-      "count": 1
-    },
-    {
-      "code": "US",
-      "zh": "美国",
+      "code": "RU",
+      "zh": "俄罗斯",
       "count": 1
     }
   ]
