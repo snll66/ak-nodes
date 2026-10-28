@@ -1,57 +1,42 @@
 {
-  "generated_at": "2026-10-28 16:30:34 UTC",
+  "generated_at": "2026-10-28 22:21:01 UTC",
   "source": "vpngate.net/api/iphone",
   "worker": "https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@",
-  "raw_nodes": 97,
-  "sstp_nodes": 83,
+  "raw_nodes": 94,
+  "sstp_nodes": 80,
   "extra_nodes": 0,
-  "checked": 83,
-  "success": 40,
-  "available": 53,
+  "checked": 80,
+  "success": 30,
+  "available": 43,
   "types": {
-    "sstp": 53,
+    "sstp": 43,
     "https": 0,
     "turn": 0
   },
   "classes": {
-    "residential": 38,
-    "commercial": 15,
+    "residential": 29,
+    "commercial": 14,
     "unknown": 0
   },
   "countries": [
     {
-      "code": "KR",
-      "zh": "韩国",
+      "code": "JP",
+      "zh": "日本",
       "count": 15
     },
     {
-      "code": "JP",
-      "zh": "日本",
-      "count": 11
+      "code": "KR",
+      "zh": "韩国",
+      "count": 9
     },
     {
-      "code": "VN",
-      "zh": "越南",
-      "count": 6
-    },
-    {
-      "code": "RU",
-      "zh": "俄罗斯",
-      "count": 3
-    },
-    {
-      "code": "BY",
-      "zh": "白俄罗斯",
+      "code": "FR",
+      "zh": "法国",
       "count": 1
     },
     {
-      "code": "CA",
-      "zh": "加拿大",
-      "count": 1
-    },
-    {
-      "code": "PH",
-      "zh": "菲律宾",
+      "code": "GD",
+      "zh": "格林纳达",
       "count": 1
     },
     {
@@ -60,8 +45,18 @@
       "count": 1
     },
     {
+      "code": "RU",
+      "zh": "俄罗斯",
+      "count": 1
+    },
+    {
       "code": "TH",
       "zh": "泰国",
+      "count": 1
+    },
+    {
+      "code": "US",
+      "zh": "美国",
       "count": 1
     }
   ]
