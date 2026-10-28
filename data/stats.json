@@ -1,37 +1,42 @@
 {
-  "generated_at": "2026-10-27 21:57:22 UTC",
+  "generated_at": "2026-10-28 01:03:32 UTC",
   "source": "vpngate.net/api/iphone",
   "worker": "https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@",
   "raw_nodes": 98,
-  "sstp_nodes": 80,
+  "sstp_nodes": 85,
   "extra_nodes": 0,
-  "checked": 80,
-  "success": 13,
-  "available": 31,
+  "checked": 85,
+  "success": 27,
+  "available": 41,
   "types": {
-    "sstp": 31,
+    "sstp": 41,
     "https": 0,
     "turn": 0
   },
   "classes": {
-    "residential": 12,
-    "commercial": 19,
+    "residential": 25,
+    "commercial": 16,
     "unknown": 0
   },
   "countries": [
     {
       "code": "JP",
       "zh": "日本",
-      "count": 8
+      "count": 13
     },
     {
       "code": "KR",
       "zh": "韩国",
-      "count": 3
+      "count": 10
     },
     {
-      "code": "AU",
-      "zh": "澳大利亚",
+      "code": "TH",
+      "zh": "泰国",
+      "count": 2
+    },
+    {
+      "code": "FR",
+      "zh": "法国",
       "count": 1
     },
     {
