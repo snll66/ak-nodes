@@ -1,37 +1,37 @@
 {
-  "generated_at": "2026-11-04 00:29:25 UTC",
+  "generated_at": "2026-11-04 08:46:36 UTC",
   "source": "vpngate.net/api/iphone",
   "worker": "https://ak-check.class-40b.workers.dev/check?sstp=vpn:vpn@",
-  "raw_nodes": 99,
-  "sstp_nodes": 76,
+  "raw_nodes": 97,
+  "sstp_nodes": 82,
   "extra_nodes": 0,
-  "checked": 76,
-  "success": 35,
-  "available": 54,
+  "checked": 82,
+  "success": 51,
+  "available": 64,
   "types": {
-    "sstp": 54,
+    "sstp": 64,
     "https": 0,
     "turn": 0
   },
   "classes": {
-    "residential": 34,
-    "commercial": 20,
-    "unknown": 0
+    "residential": 50,
+    "commercial": 13,
+    "unknown": 1
   },
   "countries": [
     {
       "code": "JP",
       "zh": "日本",
-      "count": 17
+      "count": 26
     },
     {
       "code": "KR",
       "zh": "韩国",
-      "count": 9
+      "count": 15
     },
     {
-      "code": "CA",
-      "zh": "加拿大",
+      "code": "AU",
+      "zh": "澳大利亚",
       "count": 2
     },
     {
@@ -40,18 +40,13 @@
       "count": 2
     },
     {
-      "code": "AE",
-      "zh": "阿联酋",
-      "count": 1
+      "code": "US",
+      "zh": "美国",
+      "count": 2
     },
     {
-      "code": "FR",
-      "zh": "法国",
-      "count": 1
-    },
-    {
-      "code": "GB",
-      "zh": "英国",
+      "code": "GD",
+      "zh": "格林纳达",
       "count": 1
     },
     {
@@ -62,6 +57,11 @@
     {
       "code": "RU",
       "zh": "俄罗斯",
+      "count": 1
+    },
+    {
+      "code": "VN",
+      "zh": "越南",
       "count": 1
     }
   ]
